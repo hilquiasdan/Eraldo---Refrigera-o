@@ -6,8 +6,8 @@ import { useToast } from '../../hooks/useToast';
 import { Spinner } from '../../components/ui/Loading';
 
 export function LoginPage() {
-  const [email, setEmail] = useState('admin@eraldorefrigeracao.com.br');
-  const [senha, setSenha] = useState('eraldo123');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const toast = useToast();
@@ -39,14 +39,14 @@ export function LoginPage() {
           <img src="/logo.png" alt="Eraldo"/>
         </div>
         <h1>Acesso Administrativo</h1>
-        <p className="sub">Entre com seu e-mail e senha para acessar o painel</p>
+        <p className="sub">Entre com seu usuário e senha para acessar o painel</p>
         <div className="field">
-          <label>E-mail</label>
+          <label>Usuário</label>
           <input
-            type="email"
+            type="text"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder="seu@email.com"
+            placeholder="seu usuário"
             autoFocus
             required
             disabled={loading}
@@ -67,12 +67,6 @@ export function LoginPage() {
           {loading ? <Spinner/> : <Icon name="lock" size={16}/>}
           {loading ? 'Entrando...' : 'Entrar no painel'}
         </button>
-        <div className="login-hint">
-          <Icon name="eye" size={14} style={{ flexShrink: 0, marginTop: 2 }}/>
-          <div>
-            <strong>Demo:</strong> <code>admin@eraldorefrigeracao.com.br</code> / senha <code>eraldo123</code>
-          </div>
-        </div>
       </form>
     </div>
   );

@@ -1,10 +1,10 @@
 -- Eraldo Refrigeração - Seed data (SQLite)
 -- Senha padrão admin: eraldo123 (bcrypt hash)
 
--- Usuários
+-- Usuários (login por nome de usuário)
 INSERT INTO users (nome, email, senha_hash, role) VALUES
-('Eraldo Silva', 'admin@eraldorefrigeracao.com.br', '$2a$10$uLCeoskIv1NRPhrox2Q/heiC2wkG2cf3QoG0YyNpTT7HYqeC.KqLm', 'admin'),
-('Atendente Teste', 'atendente@eraldorefrigeracao.com.br', '$2a$10$uLCeoskIv1NRPhrox2Q/heiC2wkG2cf3QoG0YyNpTT7HYqeC.KqLm', 'atendente');
+('AdminAr', 'adminar@eraldorefrigeracao.com.br', '$2a$10$2gvocJ5RjEEr.r94jA3i8e460NqY8rWw1NbVSKOr.h.qS3ZpDDINW', 'admin'),
+('Eraldomot', 'eraldomot@eraldorefrigeracao.com.br', '$2a$10$.9onsEI3ixaWRdSOQxneOuEaS/NcnFbGtExgpcB7B5sWz.SMknIEi', 'admin');
 
 -- Configurações da empresa
 INSERT INTO configuracoes (chave, valor) VALUES
