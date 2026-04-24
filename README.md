@@ -1,25 +1,117 @@
-# CODING AGENTS: READ THIS FIRST
+# Eraldo Refrigeração Automotiva
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+Sistema completo para oficina de refrigeração automotiva:
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+- **Landing page** pública com WhatsApp, depoimentos, galeria e formulário de orçamento
+- **Painel administrativo** para emissão de notas (A4 e bobina térmica 80mm), gestão de clientes, veículos, mecânicos, serviços e relatórios
+- **API REST** em Node.js + Express com autenticação JWT e permissões por papel (admin / mecânico / atendente)
+- **Banco** MySQL
 
-## What you should do — IMPORTANT
+Monorepo:
 
-**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+```
+backend/   → API Node/Express + MySQL
+frontend/  → SPA React (Vite) com landing + admin
+project/   → Arquivos originais do protótipo (referência visual)
+```
 
-**Read `project/Eraldo Refrigeracao.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+## Desenvolvimento local
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+### Pré-requisitos
+- Node.js 18+
+- MySQL 8+
 
-## About the design files
+### 1. Configurar o banco
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+```bash
+mysql -u root -p
+```
+```sql
+CREATE DATABASE eraldo_refrigeracao CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'eraldo'@'localhost' IDENTIFIED BY 'senhaforte';
+GRANT ALL ON eraldo_refrigeracao.* TO 'eraldo'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+### 2. Backend
 
-## Bundle contents
+```bash
+cd backend
+cp .env.example .env   # edite com suas credenciais MySQL e JWT_SECRET
+npm install
+npm run migrate        # cria tabelas + dados iniciais
+npm run dev            # roda em http://localhost:3001
+```
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `Eraldo Refrigeração.` project files (HTML prototypes, assets, components)
+Usuário demo: `admin@eraldorefrigeracao.com.br` / senha `eraldo123`
+
+Para trocar a senha do admin:
+```bash
+npm run hash-password -- MinhaSenhaForte
+# copie o hash e rode:
+# UPDATE users SET senha_hash = '<hash>' WHERE email = 'admin@eraldorefrigeracao.com.br';
+```
+
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev            # roda em http://localhost:5173
+```
+
+O Vite está configurado com proxy — requisições a `/api/*` são encaminhadas ao backend em `localhost:3001`.
+
+## Deploy na Hostinger
+
+Veja instruções completas em **[DEPLOY.md](DEPLOY.md)**.
+
+Resumo:
+1. Hostinger Business/Cloud/VPS com Node.js habilitado
+2. Criar banco MySQL pelo painel hPanel
+3. Fazer upload do backend, configurar `.env` com as credenciais da Hostinger
+4. `npm install && npm run migrate && npm start`
+5. Fazer build do frontend e servir pelo próprio backend (em produção o Express serve `frontend/dist`)
+6. Configurar domínio apontando para a porta do Node
+
+## Estrutura da API
+
+Todas as rotas (exceto `/api/auth/login` e `/api/config/publica`) exigem `Authorization: Bearer <token>`.
+
+| Rota | Método | Descrição |
+|------|--------|-----------|
+| `/api/auth/login` | POST | Login (retorna JWT) |
+| `/api/auth/me` | GET | Usuário autenticado |
+| `/api/users` | CRUD | Gestão de usuários (admin) |
+| `/api/clientes` | CRUD | Clientes (+ `/:id/veiculos`) |
+| `/api/mecanicos` | CRUD | Mecânicos |
+| `/api/servicos` | CRUD | Serviços padrão |
+| `/api/notas` | CRUD | Notas fiscais internas |
+| `/api/notas/:id/status` | PATCH | Mudar status de uma nota |
+| `/api/dashboard/kpis` | GET | Indicadores do dashboard |
+| `/api/dashboard/faturamento` | GET | Receita dos últimos N dias |
+| `/api/dashboard/notas-recentes` | GET | Últimas notas |
+| `/api/config` | GET/PUT | Configurações da empresa |
+
+## Permissões por papel
+
+- **admin** — acesso total, único que gerencia usuários e edita configurações
+- **mecanico** — pode emitir notas, consultar clientes e próprias notas
+- **atendente** — pode emitir notas, gerenciar clientes e consultar histórico
+
+## Scripts úteis
+
+**Backend:**
+- `npm run dev` — servidor com auto-reload
+- `npm run migrate` — aplica schema + seeds
+- `npm run hash-password -- <senha>` — gera hash bcrypt
+
+**Frontend:**
+- `npm run dev` — dev server com proxy para API
+- `npm run build` — build otimizado em `dist/`
+- `npm run preview` — preview do build
+
+## Licença
+
+Proprietário. Todos os direitos reservados a Eraldo Refrigeração Automotiva.
