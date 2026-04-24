@@ -23,9 +23,9 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-// Auto-migra o banco no startup (idempotente)
+// Auto-migra o banco no startup (idempotente) - async por conta do sql.js (WASM)
 try {
-  runMigrations({ silent: false });
+  await runMigrations({ silent: false });
 } catch (err) {
   console.error('Falha ao rodar migrations:', err.message);
   process.exit(1);

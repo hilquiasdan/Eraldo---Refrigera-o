@@ -1,12 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { db, closeDb } from './pool.js';
+import { getDb, closeDb, save } from './pool.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const migrationsDir = path.resolve(__dirname, '../../migrations');
 
-export function runMigrations({ silent = false } = {}) {
+export async function runMigrations({ silent = false } = {}) {
+  const db = await getDb();
+
   // Tabela de controle
   db.exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
@@ -15,8 +17,10 @@ export function runMigrations({ silent = false } = {}) {
     );
   `);
 
+  // Lê migrations já aplicadas
+  const res = db.exec('SELECT filename FROM _migrations');
   const applied = new Set(
-    db.prepare('SELECT filename FROM _migrations').all().map((r) => r.filename)
+    res.length ? res[0].values.map((row) => row[0]) : []
   );
 
   const files = fs.readdirSync(migrationsDir)
@@ -31,15 +35,20 @@ export function runMigrations({ silent = false } = {}) {
     db.exec('BEGIN');
     try {
       db.exec(sql);
-      db.prepare('INSERT INTO _migrations (filename) VALUES (?)').run(file);
+      const stmt = db.prepare('INSERT INTO _migrations (filename) VALUES (?)');
+      stmt.bind([file]);
+      stmt.step();
+      stmt.free();
       db.exec('COMMIT');
-      if (!silent) console.log(`  ✓ ok`);
+      if (!silent) console.log('  ✓ ok');
       count++;
     } catch (err) {
-      db.exec('ROLLBACK');
+      try { db.exec('ROLLBACK'); } catch (_) {}
       throw new Error(`Falha em ${file}: ${err.message}`);
     }
   }
+
+  if (count > 0) save(); // persiste imediatamente após migrations
 
   if (!silent) {
     if (count === 0) console.log('Nenhuma migration nova.');
@@ -48,11 +57,11 @@ export function runMigrations({ silent = false } = {}) {
   return count;
 }
 
-// Permite rodar via CLI: `node src/db/migrate.js`
+// CLI: `node src/db/migrate.js`
 const isMain = import.meta.url === `file://${process.argv[1]}`;
 if (isMain) {
   try {
-    runMigrations();
+    await runMigrations();
     closeDb();
   } catch (err) {
     console.error(err);

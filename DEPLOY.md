@@ -68,7 +68,7 @@ CORS_ORIGIN=https://seudominio.com.br,https://www.seudominio.com.br
    - **Arquivo de inicialização:** `src/server.js`
 3. Clique em **"Salvar"**
 4. Clique em **"Run NPM Install"** (ou abra o terminal e rode `npm install --omit=dev`)
-   > Isso vai instalar o `better-sqlite3` (binário pré-compilado para Linux x64)
+   > Instala apenas pacotes JavaScript puros — **sem compilação nativa, sem Python, sem node-gyp**.
 5. Clique em **"Iniciar aplicação"**
 
 Na primeira execução, o servidor vai:
@@ -177,8 +177,8 @@ sqlite3 data/eraldo.db
 **502 Bad Gateway**
 → Aplicação Node.js não está rodando. Veja o log no painel. Verifique se `npm install` rodou com sucesso.
 
-**Erro ao instalar `better-sqlite3`**
-→ Confirme que o servidor é Linux x64 (padrão Hostinger) e Node 18+. O pacote tem binários pré-compilados.
+**Erro ao instalar dependências**
+→ O projeto usa apenas pacotes JavaScript puros (`sql.js` é SQLite em WebAssembly, não precisa de compilação nativa). Se houver erro, confirme que está usando Node 18+ no painel.
 
 **Frontend não carrega (404)**
 → Confirme que `backend/public/index.html` existe no servidor.
