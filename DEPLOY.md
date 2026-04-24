@@ -1,179 +1,254 @@
-# Deploy na Hostinger — Guia Rápido
+# Deploy na Hostinger — Guia Definitivo
 
-> **Pré-requisito:** plano Hostinger **Business**, **Cloud Hosting** ou **VPS** com Node.js (planos Premium/Starter compartilhados não suportam).
+> ⚠️ **Pré-requisito:** plano Hostinger **Business**, **Cloud Hosting** ou **VPS** (Premium e Starter NÃO suportam Node.js persistente).
 
-✅ **UMA pasta só no servidor** — o repositório inteiro é a aplicação
-✅ **Banco SQLite embutido** (`sql.js`) — sem criação de banco no painel
-✅ **Zero compilação nativa** — sem Python, sem node-gyp
-✅ **Frontend já vem buildado** em `public/`
-✅ **JWT_SECRET pré-gerado** no `.env.production`
-✅ **Migrations automáticas** no startup
-
----
-
-## Passo 1 — Subir o projeto para o servidor
-
-**Opção A — Git via SSH (mais fácil se disponível):**
-```bash
-ssh u123456789@seu-servidor.hostinger.com
-cd ~
-git clone https://github.com/hilquiasdan/Eraldo---Refrigera-o.git eraldo
-```
-
-**Opção B — Download ZIP e upload:**
-1. No GitHub, clique em **Code → Download ZIP**
-2. Extraia o ZIP no seu computador
-3. No hPanel → **Gerenciador de Arquivos** → crie a pasta `eraldo/`
-4. Faça upload de **todo o conteúdo** da pasta extraída para dentro de `eraldo/`
-   > Não crie subpasta. Os arquivos (`src/`, `public/`, `package.json`, etc.) devem ficar na raiz de `eraldo/`.
-
-### Estrutura esperada no servidor:
-
-```
-/home/u123456789/eraldo/
-├── src/                  ← código da API
-├── migrations/           ← SQL (roda automaticamente)
-├── public/               ← frontend buildado
-├── frontend/             ← código-fonte (só usar se for editar visual)
-├── package.json
-├── .env.production       ← renomear para .env (Passo 2)
-└── data/                 ← criado automaticamente (banco SQLite)
-```
+✅ **Zero configuração** — sobe os arquivos, aponta o painel e clica em iniciar
+✅ **JWT_SECRET auto-gerado** no primeiro startup
+✅ **Banco SQLite criado automaticamente**
+✅ **Sem compilação nativa** (sql.js puro JavaScript)
+✅ **Frontend já vem buildado** dentro do projeto
 
 ---
 
-## Passo 2 — Configurar o `.env`
+## Passo a passo (siga em ordem)
 
-Dentro de `eraldo/`:
+### 1️⃣ Baixar o projeto do GitHub
 
-1. **Renomeie** `.env.production` para `.env`
-2. **Abra** e ajuste apenas `CORS_ORIGIN` com seu domínio:
+- Acesse https://github.com/hilquiasdan/Eraldo---Refrigera-o
+- Clique no botão verde **"Code"** → **"Download ZIP"**
+- Vai baixar `Eraldo---Refrigera-o-main.zip` (~2MB)
 
-```env
-CORS_ORIGIN=https://seudominio.com.br,https://www.seudominio.com.br
+### 2️⃣ Subir o ZIP na Hostinger
+
+1. hPanel → **Gerenciador de Arquivos**
+2. Vá para a pasta `domains/seudominio/public_html/` OU `/home/SEU_USUARIO/` (preferência: fora do public_html para segurança)
+3. Clique em **Upload Files** → escolha o ZIP
+4. Aguarde upload (alguns segundos)
+
+### 3️⃣ Extrair o ZIP no servidor
+
+1. Clique com o botão direito no ZIP → **Extract**
+2. Vai criar uma pasta tipo `Eraldo---Refrigera-o-main/`
+3. **Renomeie essa pasta para `eraldo`** (clique direito → Rename)
+4. **Apague o ZIP** (não precisa mais)
+
+### 4️⃣ Criar a aplicação Node.js no painel
+
+1. hPanel → **Avançado** → **Node.js** (ou "Setup Node.js App")
+2. Clique em **"Create Application"** / **"Criar aplicação"**
+3. Configure:
+
+| Campo | Valor |
+|-------|-------|
+| **Node.js version** | **20.x** (mais recente disponível) |
+| **Application mode** | **Production** |
+| **Application root** | `eraldo` (ou caminho completo `/home/SEU_USUARIO/eraldo`) |
+| **Application URL** | seu domínio principal |
+| **Application startup file** | `app.js` |
+
+4. Clique em **Create** / **Criar**
+
+### 5️⃣ Instalar dependências
+
+No painel da aplicação Node.js que acabou de criar:
+
+1. Procure o botão **"Run NPM Install"** (ou "Install" / "Executar npm install")
+2. Clique e aguarde 1-2 minutos
+3. Quando terminar deve aparecer "Success" ou similar
+
+> Se não tem botão visível, abra o **terminal SSH** (se disponível):
+> ```bash
+> cd ~/eraldo
+> npm install --omit=dev
+> ```
+
+### 6️⃣ Iniciar a aplicação
+
+No mesmo painel:
+- Clique em **"Start application"** / **"Iniciar aplicação"**
+
+### 7️⃣ Verificar que subiu
+
+Acesse no navegador: `https://seudominio.com.br/api/health`
+
+Deve retornar:
+```json
+{"status":"ok","timestamp":"..."}
 ```
 
-> **JWT_SECRET já vem pronto. Não há credenciais de banco.**
+Se retornou isso, **está funcionando**. Acesse:
+- `https://seudominio.com.br/` — landing page
+- `https://seudominio.com.br/login` — tela de login
 
----
-
-## Passo 3 — Configurar Node.js no hPanel
-
-1. **hPanel → Avançado → Node.js** (ou "Aplicações Node.js")
-2. **"Criar aplicação":**
-   - **Tipo/Framework:** Node.js (genérico) ou Express
-   - **Versão Node:** **20** (recomendado)
-   - **Modo:** Production
-   - **Raiz da aplicação:** `/home/u123456789/eraldo`
-   - **URL:** seu domínio
-   - **Arquivo de inicialização / Startup file:** `src/server.js`
-3. Clique em **"Salvar"**
-4. Clique em **"Run NPM Install"** (ou no terminal: `npm install --omit=dev`)
-   > Instala apenas pacotes JavaScript puros — sem compilação nativa.
-5. Clique em **"Iniciar aplicação"**
-
-Na primeira execução, o servidor vai:
-- Criar a pasta `data/`
-- Criar o banco `eraldo.db`
-- Rodar migrations automaticamente
-- Popular com dados iniciais
-
-Log esperado:
-```
-> Aplicando 001_schema.sql...
-  ✓ ok
-> Aplicando 002_seed.sql...
-  ✓ ok
-2 migration(s) aplicada(s).
-API rodando em http://localhost:3001
-```
-
----
-
-## Passo 4 — Testar
-
-Acesse:
-- `https://seudominio.com.br/` → landing page
-- `https://seudominio.com.br/api/health` → `{"status":"ok"}`
-- `https://seudominio.com.br/login` → tela de login
-
-**Login admin:**
+**Login:**
 - `AdminAr` / `86671266Hh@`
 - `Eraldomot` / `Heloisa123`
 
 ---
 
-## Passo 5 — SSL (HTTPS)
+## 🔧 Se NÃO funcionou
 
-No hPanel:
-- **Domínios → SSL** → ativar **SSL grátis** (Let's Encrypt)
-- Marcar **"Forçar HTTPS"**
+### Diagnóstico rápido
 
----
+**1. Veja os logs da aplicação no painel**
 
-## Backup do banco
+No painel Node.js, procure por **"Logs"** ou **"View logs"**. Os primeiros 20 logs já dizem tudo:
 
-O banco é o arquivo `data/eraldo.db`. Para backup:
-
-```bash
-cp ~/eraldo/data/eraldo.db ~/backups/eraldo-$(date +%F).db
+✅ **Logs de sucesso esperados:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ Eraldo Refrigeração — iniciando servidor
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ .env.production carregado
+✓ JWT_SECRET gerado e salvo em data/.jwt-secret
+✓ Frontend servido de /home/.../eraldo/public
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ✓ API rodando na porta XXXX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Recomendado: agendar backup diário via cron do hPanel.
+### Problemas comuns
+
+#### ❌ "Cannot find module 'express'"
+**Causa:** `npm install` não rodou (ou falhou).
+**Solução:** Clique em **"Run NPM Install"** no painel. Aguarde até terminar.
+
+#### ❌ "ERR_MODULE_NOT_FOUND: ./src/server.js"
+**Causa:** O painel está apontando para uma pasta errada.
+**Solução:** Confira se "Application root" é `eraldo` (e dentro dela existem `src/`, `migrations/`, `public/`, `app.js`).
+
+#### ❌ "EACCES" ao instalar
+**Causa:** Não vai mais acontecer — usamos `sql.js` (puro JavaScript).
+Se acontecer com outro pacote, contate suporte Hostinger pedindo permissão para `npm install`.
+
+#### ❌ Frontend abre mas API retorna CORS error
+**Causa:** Domínio configurado errado no `.env`.
+**Solução:** O sistema está configurado para aceitar **qualquer origem** por padrão se você não mexer no `.env`. Se mexeu, abra `.env` ou `.env.production` e:
+- Ou apague o valor de `CORS_ORIGIN=` (deixa vazio = aceita tudo)
+- Ou coloque seu domínio: `CORS_ORIGIN=https://seudominio.com.br,https://www.seudominio.com.br`
+- Reinicie a aplicação no painel
+
+#### ❌ Página em branco / 502 Bad Gateway
+**Causa:** A aplicação Node não está rodando.
+**Solução:**
+1. Veja os logs (se tem erro, copie a mensagem completa)
+2. Confira se "Application startup file" é `app.js`
+3. Tente parar e iniciar de novo
+
+#### ❌ "Estrutura aninhada" (subpasta dentro de subpasta)
+Verifique a estrutura no servidor:
+```bash
+# Estrutura CORRETA:
+eraldo/
+├── app.js              ← entry point
+├── src/
+├── migrations/
+├── public/
+└── package.json
+
+# Estrutura ERRADA:
+eraldo/
+└── Eraldo---Refrigera-o-main/   ← subpasta sobrando
+    ├── app.js
+    ├── src/
+    └── ...
+```
+
+Se está errada: entre na subpasta interna, mova todo o conteúdo para a pasta acima, apague a vazia.
 
 ---
 
-## Atualizar o sistema no futuro
+## 📂 Estrutura no servidor (referência)
 
+```
+/home/SEU_USUARIO/eraldo/
+├── app.js                  ← arquivo de inicialização (apontar aqui no painel)
+├── src/                    ← código da API
+│   ├── server.js
+│   ├── db/
+│   ├── middleware/
+│   └── routes/
+├── migrations/             ← SQL inicial
+├── public/                 ← frontend buildado
+├── frontend/               ← código-fonte (não precisa em produção)
+├── package.json
+├── .env.production         ← config (servidor lê isso automaticamente)
+└── data/                   ← banco SQLite (criado em runtime, NÃO apague depois)
+    ├── eraldo.db
+    └── .jwt-secret
+```
+
+---
+
+## 🔄 Atualizar o sistema no futuro
+
+Via SSH (se disponível):
 ```bash
 cd ~/eraldo
 git pull
 npm install --omit=dev    # só se package.json mudou
-# clicar em "Reiniciar aplicação" no painel
+# painel: "Restart application"
 ```
 
-Migrations novas rodam automaticamente. O banco existente é preservado.
+Sem SSH:
+1. Baixe o ZIP novo do GitHub
+2. Faça upload
+3. Substitua os arquivos `src/`, `public/`, `package.json`, `migrations/`
+4. **NÃO substitua a pasta `data/`** (perde os dados!)
+5. Reinicie a aplicação no painel
 
 ---
 
-## Rebuildar o frontend (se mudar algo visual)
+## 💾 Backup do banco
 
-Localmente no seu computador:
+O banco é o arquivo `data/eraldo.db`. Para fazer backup:
 
+Via SSH:
 ```bash
-cd eraldo
-npm run build:frontend    # builda e copia para public/
-git add . && git commit -m "update UI" && git push
+cp ~/eraldo/data/eraldo.db ~/backups/eraldo-$(date +%F).db
 ```
 
-No servidor: `git pull` e reiniciar.
+Via Gerenciador de Arquivos: clique direito no `data/eraldo.db` → Download.
+
+Ou agendar backup automático em **hPanel → Backups**.
 
 ---
 
-## Troubleshooting
+## 🔐 Trocar senha do admin
 
-**Erro de permissão EACCES no `npm install`**
-→ Garantido que **não vai acontecer**: o projeto usa `sql.js` (JavaScript puro em WebAssembly). Zero pacotes com compilação nativa.
+**Forma 1 — pelo painel (mais fácil):**
+- Faça login
+- Vá em "Usuários" no menu
+- Edite o usuário e defina nova senha
 
-**502 Bad Gateway**
-→ Aplicação Node não está rodando. Veja o log no painel.
-
-**Frontend não carrega (404)**
-→ Confirme que `public/index.html` existe no servidor.
-
-**"Token inválido" no login**
-→ Limpe o localStorage do navegador.
-
-**Mudei o domínio e o login não funciona**
-→ Atualize `CORS_ORIGIN` no `.env` e reinicie.
-
----
-
-## Trocar a senha do admin via terminal (opcional)
-
+**Forma 2 — via terminal SSH:**
 ```bash
 cd ~/eraldo
 npm run hash-password -- SuaNovaSenhaForte
+# copie o hash gerado
 ```
 
-Copie o hash e rode via sqlite3 (se disponível) ou peça para eu fazer um endpoint.
+Depois, abra o banco e atualize:
+```bash
+node -e "
+import('./src/db/pool.js').then(async ({query}) => {
+  await query('UPDATE users SET senha_hash = ? WHERE nome = ?',
+    ['COLE-O-HASH-AQUI', 'AdminAr']);
+  console.log('Atualizado');
+  process.exit(0);
+});
+"
+```
+
+---
+
+## 📞 Login do sistema
+
+Após subir, acesse `https://seudominio.com.br/login`:
+
+| Usuário | Senha |
+|---------|-------|
+| `AdminAr` | `86671266Hh@` |
+| `Eraldomot` | `Heloisa123` |
+
+Ambos têm acesso total (admin).

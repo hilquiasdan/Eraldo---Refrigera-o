@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Eraldo Refrigeração Automotiva - Sistema completo (API + frontend)",
   "type": "module",
-  "main": "src/server.js",
+  "main": "app.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node app.js",
     "dev": "node --watch src/server.js",
     "migrate": "node src/db/migrate.js",
     "hash-password": "node src/utils/hash-password.js",
