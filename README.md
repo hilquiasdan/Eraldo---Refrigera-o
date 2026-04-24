@@ -11,9 +11,12 @@ Monorepo:
 
 ```
 backend/   → API Node/Express + SQLite (banco em backend/data/eraldo.db)
-frontend/  → SPA React (Vite) com landing + admin
+           → Frontend buildado servido de backend/public/
+frontend/  → Código-fonte React (Vite) — só necessário se for rebuildar
 project/   → Arquivos originais do protótipo (referência visual)
 ```
+
+**Para deploy, só o `backend/` importa** — o frontend buildado já vem dentro dele em `backend/public/`.
 
 ## Desenvolvimento local
 
@@ -51,18 +54,18 @@ npm run dev            # roda em http://localhost:5173
 
 O Vite está configurado com proxy — requisições a `/api/*` são encaminhadas ao backend em `localhost:3001`.
 
-## Deploy na Hostinger (PRONTO PARA SUBIR)
+## Deploy na Hostinger (PRONTO PARA SUBIR — UMA PASTA SÓ)
 
 Tudo já está pronto:
-- ✅ Frontend buildado em `frontend/dist/`
-- ✅ `JWT_SECRET` gerado em `.env.production`
+- ✅ Frontend buildado e incluído em `backend/public/`
+- ✅ `JWT_SECRET` gerado em `backend/.env.production`
 - ✅ Banco SQLite — não precisa configurar nada no painel
 - ✅ Migrations rodam sozinhas no startup
 
 **Veja o checklist completo em [DEPLOY.md](DEPLOY.md)** — em resumo:
 
-1. Subir os arquivos para a Hostinger (Git ou FTP)
-2. Renomear `backend/.env.production` para `backend/.env` e ajustar `CORS_ORIGIN` com seu domínio
+1. Clonar o repo ou fazer upload só da pasta `backend/` para a Hostinger
+2. Renomear `.env.production` para `.env` e ajustar `CORS_ORIGIN` com seu domínio
 3. Criar aplicação Node.js no hPanel apontando para `backend/src/server.js`
 4. Rodar "NPM Install" e clicar em "Iniciar aplicação"
 
@@ -93,13 +96,14 @@ Todas as rotas (exceto `/api/auth/login` e `/api/config/publica`) exigem `Author
 
 ## Scripts úteis
 
-**Backend:**
+**Backend (pasta `backend/`):**
 - `npm run dev` — servidor com auto-reload (migrations rodam automaticamente)
 - `npm run migrate` — aplica migrations manualmente (raramente precisa)
 - `npm run hash-password -- <senha>` — gera hash bcrypt
+- `npm run build:frontend` — builda o frontend e copia para `backend/public/`
 
-**Frontend:**
-- `npm run dev` — dev server com proxy para API
+**Frontend (pasta `frontend/` — só para desenvolvimento):**
+- `npm run dev` — dev server com proxy para API (hot reload)
 - `npm run build` — build otimizado em `dist/`
 - `npm run preview` — preview do build
 

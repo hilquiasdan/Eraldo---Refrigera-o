@@ -56,8 +56,8 @@ app.use('/api/notas', notasRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/config', configRoutes);
 
-// Em produção, serve o frontend buildado
-const staticDir = path.resolve(__dirname, '../../frontend/dist');
+// Em produção, serve o frontend buildado (de backend/public/)
+const staticDir = path.resolve(__dirname, '../public');
 if (process.env.NODE_ENV === 'production' && fs.existsSync(staticDir)) {
   app.use(express.static(staticDir));
   app.get('*', (req, res, next) => {
