@@ -63,17 +63,17 @@ npm run dev            # roda em http://localhost:5173
 
 O Vite está configurado com proxy — requisições a `/api/*` são encaminhadas ao backend em `localhost:3001`.
 
-## Deploy na Hostinger
+## Deploy na Hostinger (PRONTO PARA SUBIR)
 
-Veja instruções completas em **[DEPLOY.md](DEPLOY.md)**.
+O frontend já está **buildado** (`frontend/dist/`) e o `.env.production` já tem o `JWT_SECRET` gerado.
 
-Resumo:
-1. Hostinger Business/Cloud/VPS com Node.js habilitado
-2. Criar banco MySQL pelo painel hPanel
-3. Fazer upload do backend, configurar `.env` com as credenciais da Hostinger
-4. `npm install && npm run migrate && npm start`
-5. Fazer build do frontend e servir pelo próprio backend (em produção o Express serve `frontend/dist`)
-6. Configurar domínio apontando para a porta do Node
+**Veja o checklist completo em [DEPLOY.md](DEPLOY.md)** — em resumo:
+
+1. Criar banco MySQL no hPanel
+2. Importar `backend/migrations/001_schema.sql` e `002_seed.sql` no phpMyAdmin
+3. Fazer upload das pastas `backend/` e `frontend/dist/`
+4. Renomear `backend/.env.production` para `backend/.env` e preencher 3 dados do banco
+5. Configurar Node.js no painel apontando para `backend/src/server.js` → Iniciar
 
 ## Estrutura da API
 

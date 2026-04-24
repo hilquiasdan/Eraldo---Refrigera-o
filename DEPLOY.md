@@ -1,193 +1,168 @@
-# Deploy na Hostinger
+# Deploy na Hostinger — Guia Rápido
 
-Este guia cobre o deploy em **Hostinger Business, Cloud Hosting ou VPS** — qualquer plano com Node.js habilitado.
+> **Pré-requisito:** plano Hostinger **Business**, **Cloud Hosting** ou **VPS** com Node.js (planos Premium/Starter compartilhados não suportam).
 
-> Planos **Premium / Starter compartilhados** geralmente NÃO suportam Node.js persistente. Use Business ou superior.
+O frontend já está **buildado** (`frontend/dist/`) e o `.env` já tem o `JWT_SECRET` gerado. Você só precisa:
+1. Criar o banco
+2. Subir os arquivos
+3. Preencher 3 dados no `.env`
+4. Iniciar a aplicação
 
-## 1. Criar o banco MySQL no hPanel
+---
+
+## Passo 1 — Criar o banco MySQL no hPanel
 
 1. Acesse **hPanel → Bancos de dados → Bancos de dados MySQL**
-2. Clique em "Criar novo banco":
-   - Nome: `eraldo_refrigeracao` (o painel vai prefixar com seu usuário, ex.: `u123_eraldo`)
+2. Clique em **"Criar novo banco"**:
+   - Nome do banco: `eraldo_refrigeracao`
    - Usuário: `eraldo_admin`
    - Senha: gere uma forte e **anote**
-3. Anote também o **host** do MySQL (geralmente `localhost` na Hostinger, mas em alguns planos é um hostname externo — confira no painel)
+3. **Anote os 3 valores** que o painel mostrou:
+   - `DB_NAME` (ex: `u123456789_eraldo_refrigeracao`)
+   - `DB_USER` (ex: `u123456789_eraldo_admin`)
+   - `DB_PASSWORD` (a senha que você criou)
 
-## 2. Importar o schema
+---
 
-No hPanel, abra **phpMyAdmin** do banco recém-criado e importe os arquivos na ordem:
+## Passo 2 — Importar o banco
+
+No hPanel, abra **phpMyAdmin** do banco recém-criado e importe **na ordem**:
 
 1. `backend/migrations/001_schema.sql`
 2. `backend/migrations/002_seed.sql`
 
-Ou, se você tem SSH: faça upload do projeto e rode `npm run migrate` (mais abaixo).
+> Isso cria todas as tabelas e o usuário admin demo.
 
-## 3. Fazer build do frontend
+---
 
-No seu computador, antes de enviar:
+## Passo 3 — Subir os arquivos
 
-```bash
-cd frontend
-npm install
-npm run build
-```
+Você precisa subir essas duas pastas para o servidor:
 
-Isso gera a pasta `frontend/dist/`. Em produção o backend serve essa pasta automaticamente.
+- `backend/` (pasta inteira, **sem** `node_modules`)
+- `frontend/dist/` (já vem buildada no repo)
 
-## 4. Enviar os arquivos
-
-Você precisa subir para a Hostinger:
-- `backend/` (sem `node_modules`)
-- `frontend/dist/` (não precisa do código-fonte do front em produção)
-
-Formas comuns:
-- **Git**: se a Hostinger tiver git integrado, clone o repo direto no servidor.
-- **FTP**: use FileZilla e arraste as pastas para `public_html/` ou uma pasta fora dele (veja passo 5).
-- **SSH + rsync**: `rsync -avz backend frontend/dist user@host:~/eraldo/`
-
-### Estrutura recomendada no servidor
+### Estrutura recomendada no servidor:
 
 ```
-/home/u123/eraldo/
+/home/u123456789/eraldo/
 ├── backend/
 │   ├── src/
 │   ├── migrations/
 │   ├── package.json
-│   └── .env              ← criar aqui
+│   └── .env             ← criado no Passo 4
 └── frontend/
-    └── dist/             ← só essa pasta
+    └── dist/
 ```
 
-## 5. Configurar Node.js no hPanel
+**Como subir:**
+- **Git (mais fácil):** se a Hostinger tiver Git integrado, clone diretamente: `git clone https://github.com/hilquiasdan/Eraldo---Refrigera-o.git eraldo`
+- **FTP:** use FileZilla, arraste as pastas
+- **Gerenciador de arquivos do hPanel:** zip → upload → extrair
 
-1. Vá em **hPanel → Avançado → Node.js** (ou "Aplicações Node.js")
-2. Clique em "Criar aplicação":
-   - **Versão Node**: 18 ou superior
-   - **Modo**: Production
-   - **Raiz da aplicação**: `/home/u123/eraldo/backend`
-   - **URL**: seu domínio (ex.: `eraldorefrigeracao.com.br`)
-   - **Arquivo de inicialização**: `src/server.js`
-3. Salve. O painel vai gerar um virtualenv Node para você.
+---
 
-## 6. Criar o arquivo `.env`
+## Passo 4 — Configurar o `.env`
 
-Via SSH ou pelo gerenciador de arquivos, crie `backend/.env`:
+No servidor, vá em `backend/` e:
+
+1. **Renomeie** o arquivo `.env.production` para `.env`
+2. **Abra e preencha 3 campos** com os dados anotados no Passo 1:
 
 ```env
-NODE_ENV=production
-PORT=3001
-
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=u123_eraldo_admin
-DB_PASSWORD=SENHA_FORTE_DO_BANCO
-DB_NAME=u123_eraldo_refrigeracao
-
-JWT_SECRET=GERE-UMA-STRING-ALEATORIA-DE-PELO-MENOS-32-CARACTERES
-JWT_EXPIRES_IN=7d
-
-CORS_ORIGIN=https://eraldorefrigeracao.com.br,https://www.eraldorefrigeracao.com.br
+DB_USER=u123456789_eraldo_admin       ← cole aqui
+DB_PASSWORD=SuaSenhaForte             ← cole aqui
+DB_NAME=u123456789_eraldo_refrigeracao ← cole aqui
 ```
 
-> **Gere um JWT_SECRET forte** — execute localmente:
-> ```bash
-> node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-> ```
-
-## 7. Instalar dependências e migrar o banco
-
-No painel Node.js, use o terminal integrado — ou por SSH:
-
-```bash
-cd ~/eraldo/backend
-npm install --omit=dev
-npm run migrate        # se ainda não importou pelo phpMyAdmin
+E **substitua** o domínio em `CORS_ORIGIN`:
+```env
+CORS_ORIGIN=https://seudominio.com.br,https://www.seudominio.com.br
 ```
 
-## 8. Trocar a senha do admin
+> O `JWT_SECRET` já vem pronto, não precisa mudar.
 
-Ainda no SSH:
+---
 
-```bash
-cd ~/eraldo/backend
-npm run hash-password -- SuaSenhaFortalEraldo
-# copie o hash e rode no phpMyAdmin ou via CLI:
-# UPDATE users SET senha_hash='$2a$10$...' WHERE email='admin@eraldorefrigeracao.com.br';
-```
+## Passo 5 — Configurar Node.js no hPanel
 
-## 9. Ajustar o caminho do frontend no backend
+1. **hPanel → Avançado → Node.js** (ou "Aplicações Node.js")
+2. **"Criar aplicação":**
+   - **Versão Node:** 18 ou superior
+   - **Modo:** Production
+   - **Raiz da aplicação:** `/home/u123456789/eraldo/backend`
+   - **URL:** seu domínio
+   - **Arquivo de inicialização:** `src/server.js`
+3. Clique em **"Salvar"**
+4. Clique em **"Run NPM Install"** (ou abra o terminal e rode `npm install --omit=dev`)
+5. Clique em **"Iniciar aplicação"**
 
-Em produção o `backend/src/server.js` serve o frontend buildado de `../../frontend/dist`. Se a sua estrutura no servidor for diferente, ajuste para o caminho correto — ou mantenha a estrutura recomendada.
+---
 
-## 10. Iniciar a aplicação
+## Passo 6 — Testar
 
-No painel Node.js, clique em **"Iniciar aplicação"**. Verifique o log — deve aparecer:
+Acesse:
+- `https://seudominio.com.br/` → landing page
+- `https://seudominio.com.br/api/health` → deve retornar `{"status":"ok"}`
+- `https://seudominio.com.br/login` → tela de login
 
-```
-API rodando em http://localhost:3001
-```
+**Login admin:**
+- Email: `admin@eraldorefrigeracao.com.br`
+- Senha: `eraldo123`
 
-A Hostinger faz o proxy do seu domínio para essa porta automaticamente.
+> **IMPORTANTE:** troque a senha do admin imediatamente após o primeiro login.
 
-## 11. Testar
+---
 
-- `https://seudominio.com.br/` — landing page
-- `https://seudominio.com.br/login` — tela de login
-- `https://seudominio.com.br/api/health` — deve retornar `{"status":"ok"}`
-
-## 12. Domínio + SSL
+## Passo 7 — SSL (HTTPS)
 
 No hPanel:
-- **Domínios → SSL** → ativar SSL grátis (Let's Encrypt) para o domínio
-- Verificar que está redirecionando para HTTPS
+- **Domínios → SSL** → ativar **SSL grátis** (Let's Encrypt)
+- Marcar **"Forçar HTTPS"**
 
-## Atualizações futuras
+---
 
-Quando quiser atualizar o sistema:
+## Trocar a senha do admin
+
+Via SSH (terminal Hostinger):
 
 ```bash
-# local:
-cd frontend && npm run build
-
-# upload da pasta frontend/dist + backend/src (se mudou)
-# no servidor:
 cd ~/eraldo/backend
-npm install --omit=dev     # só se package.json mudou
-# clicar em "Reiniciar aplicação" no painel Node.js
+npm run hash-password -- SuaNovaSenhaForte
 ```
 
-## Backup do banco
+Copie o hash gerado e rode no phpMyAdmin:
 
-Configure backups automáticos em **hPanel → Bancos de dados → Backups** OU faça manualmente:
+```sql
+UPDATE users
+SET senha_hash = '$2a$10$...COLE_O_HASH_AQUI...'
+WHERE email = 'admin@eraldorefrigeracao.com.br';
+```
+
+---
+
+## Atualizar o sistema no futuro
 
 ```bash
-mysqldump -h localhost -u u123_eraldo_admin -p u123_eraldo_refrigeracao > backup.sql
+cd ~/eraldo
+git pull
+cd backend
+npm install --omit=dev
+# clicar em "Reiniciar aplicação" no painel
 ```
+
+---
 
 ## Troubleshooting
 
 **502 Bad Gateway**
-- Aplicação Node.js não está rodando — verifique o log no painel
-- A porta configurada no `.env` bate com a do painel?
+→ Aplicação Node.js não está rodando. Veja o log no painel.
 
 **Erro de conexão com banco**
-- `DB_HOST` correto? Na Hostinger geralmente é `localhost`, mas alguns planos usam um host externo
-- O usuário do banco tem permissão? Precisa ser o mesmo criado no passo 1
+→ Confira `DB_USER`, `DB_PASSWORD`, `DB_NAME` no `.env`. O usuário precisa ter o prefixo do hPanel (`u123456789_`).
+
+**Frontend não carrega (404)**
+→ Confirme que `frontend/dist/index.html` existe. Se não, rode `cd frontend && npm install && npm run build` localmente e faça upload.
 
 **"Token inválido"**
-- `JWT_SECRET` mudou depois que o usuário fez login — ele precisa logar de novo
-
-**Não consigo acessar o admin**
-- Limpe o localStorage do navegador (`eraldo.token`, `eraldo.user`)
-- Senha hash no banco está correta? Rode o `hash-password` de novo
-
-## Suporte Hostinger específico
-
-A interface Node.js da Hostinger pode variar. O essencial é:
-1. Apontar para a pasta `backend/`
-2. Arquivo inicial `src/server.js`
-3. Variáveis de ambiente via `.env`
-4. Banco MySQL criado pelo hPanel
-5. Proxy reverso do domínio → porta Node
-
-Se tiver dúvida, a FAQ "Como hospedar Node.js" na base de conhecimento da Hostinger cobre o básico.
+→ Limpe o localStorage do navegador e faça login de novo.
