@@ -1,41 +1,61 @@
-import fs from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { db, closeDb } from './pool.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const migrationsDir = path.resolve(__dirname, '../../migrations');
 
-async function run() {
-  const conn = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT) || 3306,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    multipleStatements: true,
-    charset: 'utf8mb4',
-  });
+export function runMigrations({ silent = false } = {}) {
+  // Tabela de controle
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      filename TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    );
+  `);
 
-  const files = (await fs.readdir(migrationsDir))
+  const applied = new Set(
+    db.prepare('SELECT filename FROM _migrations').all().map((r) => r.filename)
+  );
+
+  const files = fs.readdirSync(migrationsDir)
     .filter((f) => f.endsWith('.sql'))
     .sort();
 
+  let count = 0;
   for (const file of files) {
-    console.log(`> Running ${file}...`);
-    const sql = await fs.readFile(path.join(migrationsDir, file), 'utf8');
-    await conn.query(sql);
-    console.log(`  ✓ done`);
+    if (applied.has(file)) continue;
+    if (!silent) console.log(`> Aplicando ${file}...`);
+    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+    db.exec('BEGIN');
+    try {
+      db.exec(sql);
+      db.prepare('INSERT INTO _migrations (filename) VALUES (?)').run(file);
+      db.exec('COMMIT');
+      if (!silent) console.log(`  ✓ ok`);
+      count++;
+    } catch (err) {
+      db.exec('ROLLBACK');
+      throw new Error(`Falha em ${file}: ${err.message}`);
+    }
   }
 
-  await conn.end();
-  console.log('\nAll migrations applied.');
+  if (!silent) {
+    if (count === 0) console.log('Nenhuma migration nova.');
+    else console.log(`\n${count} migration(s) aplicada(s).`);
+  }
+  return count;
 }
 
-run().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Permite rodar via CLI: `node src/db/migrate.js`
+const isMain = import.meta.url === `file://${process.argv[1]}`;
+if (isMain) {
+  try {
+    runMigrations();
+    closeDb();
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+}

@@ -117,7 +117,7 @@ router.post(
     const nota = await transaction(async (conn) => {
       // Reserva próximo número
       await conn.execute(
-        `UPDATE configuracoes SET valor = CAST(valor AS UNSIGNED) + 1
+        `UPDATE configuracoes SET valor = CAST(valor AS INTEGER) + 1
          WHERE chave = 'ultimo_numero_nota'`
       );
       const [[cfg]] = await conn.execute(

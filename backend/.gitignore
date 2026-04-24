@@ -5,3 +5,10 @@ node_modules/
 .DS_Store
 !.env.production
 !.env.example
+
+# Banco SQLite - gerado em runtime
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

@@ -5,12 +5,12 @@ Sistema completo para oficina de refrigeração automotiva:
 - **Landing page** pública com WhatsApp, depoimentos, galeria e formulário de orçamento
 - **Painel administrativo** para emissão de notas (A4 e bobina térmica 80mm), gestão de clientes, veículos, mecânicos, serviços e relatórios
 - **API REST** em Node.js + Express com autenticação JWT e permissões por papel (admin / mecânico / atendente)
-- **Banco** MySQL
+- **Banco** SQLite (arquivo único — sem servidor de banco para configurar)
 
 Monorepo:
 
 ```
-backend/   → API Node/Express + MySQL
+backend/   → API Node/Express + SQLite (banco em backend/data/eraldo.db)
 frontend/  → SPA React (Vite) com landing + admin
 project/   → Arquivos originais do protótipo (referência visual)
 ```
@@ -19,41 +19,29 @@ project/   → Arquivos originais do protótipo (referência visual)
 
 ### Pré-requisitos
 - Node.js 18+
-- MySQL 8+
 
-### 1. Configurar o banco
-
-```bash
-mysql -u root -p
-```
-```sql
-CREATE DATABASE eraldo_refrigeracao CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'eraldo'@'localhost' IDENTIFIED BY 'senhaforte';
-GRANT ALL ON eraldo_refrigeracao.* TO 'eraldo'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
-### 2. Backend
+### 1. Backend
 
 ```bash
 cd backend
-cp .env.example .env   # edite com suas credenciais MySQL e JWT_SECRET
+cp .env.example .env   # ajuste JWT_SECRET se quiser
 npm install
-npm run migrate        # cria tabelas + dados iniciais
 npm run dev            # roda em http://localhost:3001
 ```
+
+Migrations rodam automaticamente no startup. Banco fica em `backend/data/eraldo.db`.
 
 Usuário demo: `admin@eraldorefrigeracao.com.br` / senha `eraldo123`
 
 Para trocar a senha do admin:
 ```bash
 npm run hash-password -- MinhaSenhaForte
-# copie o hash e rode:
+# copie o hash e atualize via SQLite CLI:
+# sqlite3 data/eraldo.db
 # UPDATE users SET senha_hash = '<hash>' WHERE email = 'admin@eraldorefrigeracao.com.br';
 ```
 
-### 3. Frontend
+### 2. Frontend
 
 ```bash
 cd frontend
@@ -65,15 +53,18 @@ O Vite está configurado com proxy — requisições a `/api/*` são encaminhada
 
 ## Deploy na Hostinger (PRONTO PARA SUBIR)
 
-O frontend já está **buildado** (`frontend/dist/`) e o `.env.production` já tem o `JWT_SECRET` gerado.
+Tudo já está pronto:
+- ✅ Frontend buildado em `frontend/dist/`
+- ✅ `JWT_SECRET` gerado em `.env.production`
+- ✅ Banco SQLite — não precisa configurar nada no painel
+- ✅ Migrations rodam sozinhas no startup
 
 **Veja o checklist completo em [DEPLOY.md](DEPLOY.md)** — em resumo:
 
-1. Criar banco MySQL no hPanel
-2. Importar `backend/migrations/001_schema.sql` e `002_seed.sql` no phpMyAdmin
-3. Fazer upload das pastas `backend/` e `frontend/dist/`
-4. Renomear `backend/.env.production` para `backend/.env` e preencher 3 dados do banco
-5. Configurar Node.js no painel apontando para `backend/src/server.js` → Iniciar
+1. Subir os arquivos para a Hostinger (Git ou FTP)
+2. Renomear `backend/.env.production` para `backend/.env` e ajustar `CORS_ORIGIN` com seu domínio
+3. Criar aplicação Node.js no hPanel apontando para `backend/src/server.js`
+4. Rodar "NPM Install" e clicar em "Iniciar aplicação"
 
 ## Estrutura da API
 
@@ -103,8 +94,8 @@ Todas as rotas (exceto `/api/auth/login` e `/api/config/publica`) exigem `Author
 ## Scripts úteis
 
 **Backend:**
-- `npm run dev` — servidor com auto-reload
-- `npm run migrate` — aplica schema + seeds
+- `npm run dev` — servidor com auto-reload (migrations rodam automaticamente)
+- `npm run migrate` — aplica migrations manualmente (raramente precisa)
 - `npm run hash-password -- <senha>` — gera hash bcrypt
 
 **Frontend:**

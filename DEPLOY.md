@@ -2,47 +2,32 @@
 
 > **Pré-requisito:** plano Hostinger **Business**, **Cloud Hosting** ou **VPS** com Node.js (planos Premium/Starter compartilhados não suportam).
 
-O frontend já está **buildado** (`frontend/dist/`) e o `.env` já tem o `JWT_SECRET` gerado. Você só precisa:
-1. Criar o banco
-2. Subir os arquivos
-3. Preencher 3 dados no `.env`
-4. Iniciar a aplicação
+✅ **Banco SQLite embutido** — não precisa criar banco no painel
+✅ **Frontend já buildado** em `frontend/dist/`
+✅ **JWT_SECRET já gerado** no `.env.production`
+✅ **Migrations rodam automaticamente** quando o servidor inicia
+
+Você só precisa: subir os arquivos → configurar Node.js no painel → iniciar.
 
 ---
 
-## Passo 1 — Criar o banco MySQL no hPanel
+## Passo 1 — Subir os arquivos
 
-1. Acesse **hPanel → Bancos de dados → Bancos de dados MySQL**
-2. Clique em **"Criar novo banco"**:
-   - Nome do banco: `eraldo_refrigeracao`
-   - Usuário: `eraldo_admin`
-   - Senha: gere uma forte e **anote**
-3. **Anote os 3 valores** que o painel mostrou:
-   - `DB_NAME` (ex: `u123456789_eraldo_refrigeracao`)
-   - `DB_USER` (ex: `u123456789_eraldo_admin`)
-   - `DB_PASSWORD` (a senha que você criou)
+Suba para o servidor (Hostinger) o conteúdo do repositório.
 
----
+**Forma mais fácil — Git via SSH** (se você tiver acesso SSH):
+```bash
+ssh u123456789@seu-servidor.hostinger.com
+cd ~
+git clone https://github.com/hilquiasdan/Eraldo---Refrigera-o.git eraldo
+```
 
-## Passo 2 — Importar o banco
+**Sem SSH — via Gerenciador de Arquivos:**
+1. Baixe o ZIP do repositório no GitHub (botão **Code → Download ZIP**)
+2. No hPanel → **Gerenciador de Arquivos** → faça upload do ZIP
+3. Extraia para uma pasta como `~/eraldo/`
 
-No hPanel, abra **phpMyAdmin** do banco recém-criado e importe **na ordem**:
-
-1. `backend/migrations/001_schema.sql`
-2. `backend/migrations/002_seed.sql`
-
-> Isso cria todas as tabelas e o usuário admin demo.
-
----
-
-## Passo 3 — Subir os arquivos
-
-Você precisa subir essas duas pastas para o servidor:
-
-- `backend/` (pasta inteira, **sem** `node_modules`)
-- `frontend/dist/` (já vem buildada no repo)
-
-### Estrutura recomendada no servidor:
+### Estrutura esperada no servidor:
 
 ```
 /home/u123456789/eraldo/
@@ -50,41 +35,31 @@ Você precisa subir essas duas pastas para o servidor:
 │   ├── src/
 │   ├── migrations/
 │   ├── package.json
-│   └── .env             ← criado no Passo 4
+│   ├── .env.production    ← renomeie para .env (Passo 2)
+│   └── data/              ← criado automaticamente (banco SQLite)
 └── frontend/
     └── dist/
 ```
 
-**Como subir:**
-- **Git (mais fácil):** se a Hostinger tiver Git integrado, clone diretamente: `git clone https://github.com/hilquiasdan/Eraldo---Refrigera-o.git eraldo`
-- **FTP:** use FileZilla, arraste as pastas
-- **Gerenciador de arquivos do hPanel:** zip → upload → extrair
-
 ---
 
-## Passo 4 — Configurar o `.env`
+## Passo 2 — Configurar o `.env`
 
-No servidor, vá em `backend/` e:
+Via terminal SSH ou Gerenciador de Arquivos:
 
-1. **Renomeie** o arquivo `.env.production` para `.env`
-2. **Abra e preencha 3 campos** com os dados anotados no Passo 1:
+1. **Renomeie** `backend/.env.production` para `backend/.env`
+2. **Abra** e ajuste apenas a linha `CORS_ORIGIN` com seu domínio real:
 
-```env
-DB_USER=u123456789_eraldo_admin       ← cole aqui
-DB_PASSWORD=SuaSenhaForte             ← cole aqui
-DB_NAME=u123456789_eraldo_refrigeracao ← cole aqui
-```
-
-E **substitua** o domínio em `CORS_ORIGIN`:
 ```env
 CORS_ORIGIN=https://seudominio.com.br,https://www.seudominio.com.br
 ```
 
-> O `JWT_SECRET` já vem pronto, não precisa mudar.
+> **JWT_SECRET já vem pronto. Não precisa mudar.**
+> **Não há credenciais de banco — SQLite usa um arquivo local.**
 
 ---
 
-## Passo 5 — Configurar Node.js no hPanel
+## Passo 3 — Configurar Node.js no hPanel
 
 1. **hPanel → Avançado → Node.js** (ou "Aplicações Node.js")
 2. **"Criar aplicação":**
@@ -95,11 +70,27 @@ CORS_ORIGIN=https://seudominio.com.br,https://www.seudominio.com.br
    - **Arquivo de inicialização:** `src/server.js`
 3. Clique em **"Salvar"**
 4. Clique em **"Run NPM Install"** (ou abra o terminal e rode `npm install --omit=dev`)
+   > Isso vai instalar o `better-sqlite3` (binário pré-compilado para Linux x64)
 5. Clique em **"Iniciar aplicação"**
+
+Na primeira execução, o servidor vai:
+- Criar a pasta `backend/data/`
+- Criar o arquivo `eraldo.db`
+- Rodar todas as migrations (criar tabelas + dados iniciais)
+
+Você verá no log:
+```
+> Aplicando 001_schema.sql...
+  ✓ ok
+> Aplicando 002_seed.sql...
+  ✓ ok
+2 migration(s) aplicada(s).
+API rodando em http://localhost:3001
+```
 
 ---
 
-## Passo 6 — Testar
+## Passo 4 — Testar
 
 Acesse:
 - `https://seudominio.com.br/` → landing page
@@ -110,11 +101,11 @@ Acesse:
 - Email: `admin@eraldorefrigeracao.com.br`
 - Senha: `eraldo123`
 
-> **IMPORTANTE:** troque a senha do admin imediatamente após o primeiro login.
+> **IMPORTANTE:** troque a senha imediatamente após o primeiro login (em **Usuários** no admin).
 
 ---
 
-## Passo 7 — SSL (HTTPS)
+## Passo 5 — SSL (HTTPS)
 
 No hPanel:
 - **Domínios → SSL** → ativar **SSL grátis** (Let's Encrypt)
@@ -122,22 +113,15 @@ No hPanel:
 
 ---
 
-## Trocar a senha do admin
+## Backup do banco
 
-Via SSH (terminal Hostinger):
+O banco é o arquivo `backend/data/eraldo.db`. Para fazer backup, basta copiar este arquivo:
 
 ```bash
-cd ~/eraldo/backend
-npm run hash-password -- SuaNovaSenhaForte
+cp ~/eraldo/backend/data/eraldo.db ~/backups/eraldo-$(date +%Y%m%d).db
 ```
 
-Copie o hash gerado e rode no phpMyAdmin:
-
-```sql
-UPDATE users
-SET senha_hash = '$2a$10$...COLE_O_HASH_AQUI...'
-WHERE email = 'admin@eraldorefrigeracao.com.br';
-```
+Recomendado: agendar um cron job no hPanel para backup diário.
 
 ---
 
@@ -147,8 +131,29 @@ WHERE email = 'admin@eraldorefrigeracao.com.br';
 cd ~/eraldo
 git pull
 cd backend
-npm install --omit=dev
-# clicar em "Reiniciar aplicação" no painel
+npm install --omit=dev    # só se package.json mudou
+# clicar em "Reiniciar aplicação" no painel Node.js
+```
+
+> Migrations novas rodam automaticamente no startup. O banco existente não é perdido.
+
+---
+
+## Trocar a senha do admin manualmente (CLI)
+
+Se preferir trocar via terminal em vez do painel:
+
+```bash
+cd ~/eraldo/backend
+npm run hash-password -- SuaNovaSenhaForte
+```
+
+Copie o hash e atualize via SQLite CLI:
+
+```bash
+sqlite3 data/eraldo.db
+> UPDATE users SET senha_hash = '$2a$10$...COLE_O_HASH...' WHERE email = 'admin@eraldorefrigeracao.com.br';
+> .exit
 ```
 
 ---
@@ -156,13 +161,19 @@ npm install --omit=dev
 ## Troubleshooting
 
 **502 Bad Gateway**
-→ Aplicação Node.js não está rodando. Veja o log no painel.
+→ Aplicação Node.js não está rodando. Veja o log no painel. Verifique se `npm install` rodou com sucesso.
 
-**Erro de conexão com banco**
-→ Confira `DB_USER`, `DB_PASSWORD`, `DB_NAME` no `.env`. O usuário precisa ter o prefixo do hPanel (`u123456789_`).
+**Erro ao instalar `better-sqlite3`**
+→ Confirme que o servidor é Linux x64 (padrão Hostinger) e Node 18+. O pacote tem binários pré-compilados, mas se falhar, instale build-tools: `apt install build-essential python3` (em VPS) ou contate suporte (em Business/Cloud).
 
 **Frontend não carrega (404)**
-→ Confirme que `frontend/dist/index.html` existe. Se não, rode `cd frontend && npm install && npm run build` localmente e faça upload.
+→ Confirme que `frontend/dist/index.html` existe no servidor.
 
-**"Token inválido"**
-→ Limpe o localStorage do navegador e faça login de novo.
+**"Token inválido" no login**
+→ Limpe o localStorage do navegador (F12 → Application → Local Storage → Limpar).
+
+**Banco "travado" (database is locked)**
+→ Pode acontecer se múltiplos processos acessarem o mesmo arquivo. O `journal_mode = WAL` já está habilitado, mas se persistir, reinicie a aplicação.
+
+**Mudei o domínio e o login não funciona**
+→ Atualize `CORS_ORIGIN` no `.env` e reinicie.

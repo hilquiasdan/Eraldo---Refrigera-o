@@ -7,9 +7,27 @@ const router = express.Router();
 
 router.use(authRequired);
 
+// Helpers de data — calculamos os limites em JS (TZ do servidor) e
+// comparamos como strings ISO contra o campo data_emissao (ISO).
+function startOfDay(d = new Date()) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function addDays(d, n) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
 router.get(
   '/kpis',
   asyncHandler(async (req, res) => {
+    const todayStart = startOfDay();
+    const tomorrowStart = addDays(todayStart, 1);
+    const yesterdayStart = addDays(todayStart, -1);
+    const sevenDaysAgo = addDays(todayStart, -7);
+
     // Hoje
     const hoje = await queryOne(
       `SELECT
@@ -18,7 +36,8 @@ router.get(
          SUM(CASE WHEN status = 'aberta' THEN 1 ELSE 0 END) AS abertas,
          COALESCE(SUM(CASE WHEN status != 'cancelada' THEN total ELSE 0 END), 0) AS receita
        FROM notas
-       WHERE DATE(data_emissao) = CURDATE()`
+       WHERE data_emissao >= ? AND data_emissao < ?`,
+      [todayStart.toISOString(), tomorrowStart.toISOString()]
     );
 
     // Ontem (pra calcular variação)
@@ -27,15 +46,17 @@ router.get(
          COUNT(*) AS total,
          COALESCE(SUM(CASE WHEN status != 'cancelada' THEN total ELSE 0 END), 0) AS receita
        FROM notas
-       WHERE DATE(data_emissao) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)`
+       WHERE data_emissao >= ? AND data_emissao < ?`,
+      [yesterdayStart.toISOString(), todayStart.toISOString()]
     );
 
     // Clientes
     const clientes = await queryOne(
       `SELECT
          COUNT(*) AS total,
-         SUM(CASE WHEN created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) AS novos_semana
-       FROM clientes`
+         SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS novos_semana
+       FROM clientes`,
+      [sevenDaysAgo.toISOString()]
     );
 
     // Mecânicos
@@ -83,27 +104,29 @@ router.get(
   '/faturamento',
   asyncHandler(async (req, res) => {
     const dias = Math.min(Number(req.query.dias) || 30, 365);
+    const todayStart = startOfDay();
+    const startDate = addDays(todayStart, -(dias - 1));
+
     const rows = await query(
-      `SELECT DATE(data_emissao) AS dia,
+      `SELECT date(data_emissao) AS dia,
               COALESCE(SUM(total), 0) AS total
        FROM notas
        WHERE status != 'cancelada'
-         AND data_emissao >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-       GROUP BY DATE(data_emissao)
+         AND data_emissao >= ?
+       GROUP BY date(data_emissao)
        ORDER BY dia ASC`,
-      [dias - 1]
+      [startDate.toISOString()]
     );
 
     // Preenche dias vazios com zero
     const byDay = new Map();
     for (const r of rows) {
-      const key = r.dia instanceof Date ? r.dia.toISOString().slice(0, 10) : String(r.dia).slice(0, 10);
+      const key = String(r.dia).slice(0, 10);
       byDay.set(key, Number(r.total));
     }
     const result = [];
     for (let i = dias - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
+      const d = addDays(todayStart, -i);
       const key = d.toISOString().slice(0, 10);
       result.push({ dia: key, total: byDay.get(key) || 0 });
     }
@@ -117,7 +140,7 @@ router.get(
     const limit = Math.min(Number(req.query.limit) || 5, 20);
     const rows = await query(
       `SELECT n.id, n.numero, n.total, n.status, n.data_emissao, c.nome AS cliente_nome,
-              (SELECT GROUP_CONCAT(ni.descricao SEPARATOR ' + ')
+              (SELECT GROUP_CONCAT(ni.descricao, ' + ')
                 FROM nota_itens ni WHERE ni.nota_id = n.id) AS itens_desc
        FROM notas n
        INNER JOIN clientes c ON c.id = n.cliente_id

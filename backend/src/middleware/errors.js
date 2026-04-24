@@ -28,11 +28,14 @@ export function errorHandler(err, req, res, next) {
   if (err instanceof HttpError) {
     return res.status(err.status).json({ error: err.message, details: err.details });
   }
-  if (err?.code === 'ER_DUP_ENTRY') {
+  if (err?.code === 'SQLITE_CONSTRAINT_UNIQUE' || err?.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
     return res.status(409).json({ error: 'Registro duplicado' });
   }
-  if (err?.code === 'ER_ROW_IS_REFERENCED_2' || err?.code === 'ER_ROW_IS_REFERENCED') {
+  if (err?.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
     return res.status(409).json({ error: 'Registro está em uso e não pode ser removido' });
+  }
+  if (err?.code === 'SQLITE_CONSTRAINT_CHECK') {
+    return res.status(400).json({ error: 'Valor inválido para um dos campos' });
   }
   console.error(err);
   res.status(500).json({ error: 'Erro interno do servidor' });

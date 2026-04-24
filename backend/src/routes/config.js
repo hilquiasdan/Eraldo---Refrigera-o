@@ -44,7 +44,7 @@ router.put(
     for (const [chave, valor] of Object.entries(data)) {
       await query(
         `INSERT INTO configuracoes (chave, valor) VALUES (?, ?)
-         ON DUPLICATE KEY UPDATE valor = VALUES(valor)`,
+         ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor`,
         [chave, valor]
       );
     }

@@ -51,7 +51,7 @@ router.post(
       throw new HttpError(401, 'Usuário ou senha inválidos');
     }
 
-    await query('UPDATE users SET ultimo_acesso = NOW() WHERE id = ?', [user.id]);
+    await query("UPDATE users SET ultimo_acesso = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?", [user.id]);
 
     const token = signToken(user);
     res.json({

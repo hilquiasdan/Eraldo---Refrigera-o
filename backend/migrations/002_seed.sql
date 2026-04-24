@@ -1,6 +1,5 @@
--- Eraldo Refrigeração - Seed data
+-- Eraldo Refrigeração - Seed data (SQLite)
 -- Senha padrão admin: eraldo123 (bcrypt hash)
--- Gerado com: bcrypt.hash('eraldo123', 10)
 
 -- Usuários
 INSERT INTO users (nome, email, senha_hash, role) VALUES
@@ -56,13 +55,13 @@ INSERT INTO veiculos (cliente_id, placa, modelo, ano, cor) VALUES
 (4, 'OXI-7J33', 'Onix LT', 2020, 'Preto'),
 (5, 'MPR-1Z88', 'Strada Working', 2018, 'Vermelho');
 
--- Notas de exemplo (começando em 483)
+-- Notas de exemplo (DATE_SUB → datetime modifier)
 INSERT INTO notas (numero, cliente_id, veiculo_id, mecanico_id, usuario_id, data_emissao, subtotal, total, forma_pagamento, status) VALUES
-(483, 5, 5, 1, 1, DATE_SUB(NOW(), INTERVAL 1 DAY), 95.00, 95.00, 'dinheiro', 'cancelada'),
-(484, 3, 3, 2, 1, DATE_SUB(NOW(), INTERVAL 1 DAY), 1140.00, 1140.00, 'pix', 'paga'),
-(485, 4, 4, 4, 1, NOW(), 180.00, 180.00, 'dinheiro', 'aberta'),
-(486, 2, 2, 1, 1, NOW(), 520.00, 520.00, 'credito', 'paga'),
-(487, 1, 1, 1, 1, NOW(), 280.00, 280.00, 'pix', 'paga');
+(483, 5, 5, 1, 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day'), 95.00, 95.00, 'dinheiro', 'cancelada'),
+(484, 3, 3, 2, 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day'), 1140.00, 1140.00, 'pix', 'paga'),
+(485, 4, 4, 4, 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), 180.00, 180.00, 'dinheiro', 'aberta'),
+(486, 2, 2, 1, 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), 520.00, 520.00, 'credito', 'paga'),
+(487, 1, 1, 1, 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), 280.00, 280.00, 'pix', 'paga');
 
 -- Itens das notas
 INSERT INTO nota_itens (nota_id, servico_id, descricao, quantidade, valor_unitario, valor_total) VALUES
