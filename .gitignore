@@ -12,6 +12,7 @@ data/
 *.db-journal
 *.db-wal
 *.db-shm
+*.db.tmp
 
-# public/ vem buildado no repo (frontend compilado)
-# para rebuildar: npm run build:frontend
+# Frontend build (gerado em frontend/dist, copiado para public/)
+frontend/dist/
