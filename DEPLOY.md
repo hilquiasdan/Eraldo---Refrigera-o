@@ -107,7 +107,37 @@ No painel Node.js, procure por **"Logs"** ou **"View logs"**. Os primeiros 20 lo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+### Onde ver os logs
+
+**Logs SEMPRE são salvos no servidor** em `data/server.log` (mesmo se o painel não mostrar).
+
+Para visualizar:
+
+**Via SSH:**
+```bash
+cd ~/eraldo
+tail -100 data/server.log
+```
+
+**Via Gerenciador de Arquivos:** abra o arquivo `data/server.log` (clique direito → View / Visualizar).
+
 ### Problemas comuns
+
+#### ❌ Erro 503 (Service Unavailable)
+**Causa mais comum:** Passenger não conseguiu se conectar ao processo Node, ou ele crashou.
+
+**Solução passo a passo:**
+
+1. **Veja `data/server.log`** — ele SEMPRE registra o que aconteceu, mesmo se o painel não mostrar.
+2. Procure pela linha `✓ Servidor escutando em ...`. Se ela existe, o servidor subiu OK.
+3. Se NÃO existe, procure pela última linha com `ERROR:` — vai dizer exatamente o que falhou.
+4. **No painel Node.js**, confirme que **"Application startup file"** é exatamente: `app.js`
+5. **Pare e inicie de novo** a aplicação no painel.
+6. Se ainda 503, copie a mensagem de erro do `data/server.log` e me manda.
+
+**Outras causas de 503:**
+- Permissão de escrita na pasta `data/`. Solução via SSH: `chmod -R 755 ~/eraldo/data`
+- Aplicação levou mais de 30s pra subir. Solução: parar e iniciar de novo.
 
 #### ❌ "Cannot find module 'express'"
 **Causa:** `npm install` não rodou (ou falhou).
